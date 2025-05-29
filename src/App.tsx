@@ -1,12 +1,19 @@
-import MovieHomepage from "./features/movie/pages/MovieHomepage"
+import { Sun } from "lucide-react"
+import MovieApp from "./features/movie/pages/MovieAllPage"
+
+
 
 
 function App() {
 
   return (
-   <>
-   <MovieHomepage/>
-   </>
+    <>
+
+<div className=" ">
+
+      <MovieApp />
+</div>
+    </>
   )
 }
 
