@@ -1,5 +1,6 @@
-import { Sun } from "lucide-react"
-import MovieApp from "./features/movie/pages/MovieAllPage"
+import MovieListPage from "./features/movie/pages/MovieListPage"
+import Navbar from "./features/NavBar/NavBar"
+
 
 
 
@@ -9,10 +10,10 @@ function App() {
   return (
     <>
 
-<div className=" ">
-
-      <MovieApp />
-</div>
+      <div className=" ">
+        <Navbar/>
+        <MovieListPage />
+      </div>
     </>
   )
 }
