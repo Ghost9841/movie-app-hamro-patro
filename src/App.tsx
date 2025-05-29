@@ -1,11 +1,11 @@
-import './App.css'
+import MovieHomepage from "./features/movie/pages/MovieHomepage"
+
 
 function App() {
 
-
   return (
    <>
-   <div className="App"></div>
+   <MovieHomepage/>
    </>
   )
 }
