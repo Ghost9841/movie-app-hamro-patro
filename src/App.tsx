@@ -1,20 +1,11 @@
-import MovieListPage from "./features/movie/pages/MovieListPage"
-import Navbar from "./features/NavBar/NavBar"
+import MovieHeroSection from "./features/movie/pages/MovieHeroSection"
 
 
+type Props = {}
 
-
-
-function App() {
-
+const App = (props: Props) => {
   return (
-    <>
-
-      <div className=" ">
-        <Navbar/>
-        <MovieListPage />
-      </div>
-    </>
+    <MovieHeroSection/>
   )
 }
 

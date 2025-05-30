@@ -1,45 +1,76 @@
+// MovieListing.tsx
 import React, { useState, useEffect } from 'react';
+import { type AxiosResponse } from 'axios';
+import ytsApi from '@/services/Axios';
+import { type YtsMovie, type YtsApiResponse } from '@/features/movie/types/MovieTypes';
 
-import ytsApi from '@/services/Axios'; // Import the Axios instance
-import type { YtsApiResponse, YtsMovie } from '../types/MovieList';
-import type { AxiosResponse } from 'axios';
+interface MovieListingProps {
+  onMovieClick: (movieId: number) => void;
+  searchTerm: string;
+  selectedGenre: string;
+  favorites: number[];
+  onToggleFavorite: (movieId: number) => void;
+}
 
-
-type Props = {};
-
-const MovieListPage: React.FC<Props> = () => {
+const MovieListing: React.FC<MovieListingProps> = ({
+  onMovieClick,
+  searchTerm,
+  selectedGenre,
+  favorites,
+  onToggleFavorite,
+}) => {
   const [movies, setMovies] = useState<YtsMovie[]>([]);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [totalPages, setTotalPages] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const moviesPerPage = 10; // Matches YTS API default limit
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const moviesPerPage = 10;
 
-  // Fetch movies from YTS API
-  const fetchMovies = async (page: number) => {
+  const fetchMovies = async (page: number, query?: string, genre?: string) => {
     setLoading(true);
     setError(null);
     try {
+      const params: any = { 
+        page, 
+        limit: moviesPerPage 
+      };
+      
+      if (query && query.trim()) {
+        params.query_term = query.trim();
+      }
+      
+      if (genre && genre !== 'all') {
+        params.genre = genre;
+      }
+
       const response: AxiosResponse<YtsApiResponse> = await ytsApi.get('list_movies.json', {
-        params: { page, limit: moviesPerPage },
+        params,
       });
+      
       const { data } = response.data;
-      setMovies(data.movies);
+      setMovies(data.movies || []);
       setTotalPages(Math.ceil(data.movie_count / data.limit));
     } catch (err) {
       setError('Failed to fetch movies. Please try again.');
       console.error('Fetch error:', err);
+      setMovies([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch movies when page changes
+  // Fetch movies when page, search term, or genre changes
   useEffect(() => {
-    fetchMovies(currentPage);
-  }, [currentPage]);
+    fetchMovies(currentPage, searchTerm, selectedGenre);
+  }, [currentPage, searchTerm, selectedGenre]);
 
-  // Handle pagination
+  // Reset to page 1 when search term or genre changes
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [searchTerm, selectedGenre]);
+
   const handlePreviousPage = () => {
     if (currentPage > 1) {
       setCurrentPage(currentPage - 1);
@@ -52,94 +83,110 @@ const MovieListPage: React.FC<Props> = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center text-red-600 p-4">
+        <p>{error}</p>
+        <button
+          onClick={() => fetchMovies(currentPage, searchTerm, selectedGenre)}
+          className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (!movies || movies.length === 0) {
+    return (
+      <div className="text-center text-gray-600 p-4">
+        <p>No movies found.</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-100 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Movies</h1>
-
-        {/* Loading State */}
-        {loading && (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600"></div>
-          </div>
-        )}
-
-        {/* Error State */}
-        {error && (
-          <div className="text-center py-8">
-            <p className="text-red-600 text-lg">{error}</p>
-            <button
-              onClick={() => fetchMovies(currentPage)}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Retry
-            </button>
-          </div>
-        )}
-
-        {/* Movie List */}
-        {!loading && !error && (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-              {movies.map((movie) => (
-                <div
-                  key={movie.id}
-                  className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
-                >
-                  <img
-                    src={movie.medium_cover_image}
-                    alt={movie.title}
-                    className="w-full h-64 object-cover"
-                    loading="lazy"
-                  />
-                  <div className="p-4">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
-                      {movie.title_long}
-                    </h3>
-                    <p className="text-gray-600 text-sm">Year: {movie.year}</p>
-                    <p className="text-gray-600 text-sm flex items-center">
-                      <span className="text-yellow-400 mr-1">★</span>
-                      Rating: {movie.rating.toFixed(1)}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Pagination */}
-            <div className="flex justify-center items-center mt-8 space-x-4">
+    <div>
+      {/* Movies Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
+        {movies.map((movie) => (
+          <div key={movie.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+            <div className="relative">
+              <img
+                src={movie.medium_cover_image}
+                alt={movie.title}
+                className="w-full h-64 object-cover cursor-pointer"
+                onClick={() => onMovieClick(movie.id)}
+              />
               <button
-                onClick={handlePreviousPage}
-                disabled={currentPage === 1}
-                className={`px-4 py-2 rounded-md transition-colors ${
-                  currentPage === 1
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
+                onClick={() => onToggleFavorite(movie.id)}
+                className={`absolute top-2 right-2 p-2 rounded-full ${
+                  favorites.includes(movie.id)
+                    ? 'bg-red-500 text-white'
+                    : 'bg-white text-gray-600'
+                } hover:scale-110 transition-transform`}
               >
-                Previous
-              </button>
-              <span className="text-gray-600">
-                Page {currentPage} of {totalPages}
-              </span>
-              <button
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-                className={`px-4 py-2 rounded-md transition-colors ${
-                  currentPage === totalPages
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-              >
-                Next
+                ❤️
               </button>
             </div>
-          </>
-        )}
+            <div className="p-4">
+              <h3
+                className="font-semibold text-sm mb-2 cursor-pointer hover:text-blue-600 line-clamp-2"
+                onClick={() => onMovieClick(movie.id)}
+              >
+                {movie.title}
+              </h3>
+              <div className="flex justify-between items-center text-sm text-gray-600">
+                <span>{movie.year}</span>
+                <span className="flex items-center">
+                  ⭐ {movie.rating}/10
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Pagination */}
+      <div className="flex justify-center items-center space-x-4">
+        <button
+          onClick={handlePreviousPage}
+          disabled={currentPage === 1}
+          className={`px-4 py-2 rounded ${
+            currentPage === 1
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-blue-600 text-white hover:bg-blue-700'
+          }`}
+        >
+          Previous
+        </button>
+        
+        <span className="text-gray-700">
+          Page {currentPage} of {totalPages}
+        </span>
+        
+        <button
+          onClick={handleNextPage}
+          disabled={currentPage === totalPages}
+          className={`px-4 py-2 rounded ${
+            currentPage === totalPages
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-blue-600 text-white hover:bg-blue-700'
+          }`}
+        >
+          Next
+        </button>
       </div>
     </div>
   );
 };
 
-export default MovieListPage;
+export default MovieListing;

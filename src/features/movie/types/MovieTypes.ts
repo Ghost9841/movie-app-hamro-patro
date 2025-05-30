@@ -64,9 +64,10 @@ export interface YtsTorrent {
 }
 
 // Interface for the '@meta' object
-interface YtsMeta {
+export interface YtsMeta {
   server_time: number; // e.g., 1748532323
   server_timezone: string; // e.g., "CET"
   api_version: number; // e.g., 2
   execution_time: string; // e.g., "0 ms"
 }
+

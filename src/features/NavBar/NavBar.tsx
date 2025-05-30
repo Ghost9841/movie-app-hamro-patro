@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Search } from 'lucide-react'; // Using lucide-react for the search icon
 import type { AxiosResponse } from 'axios';
-import type { YtsApiResponse } from '../movie/types/MovieList';
+import type { YtsApiResponse } from '../movie/types/MovieTypes';
 import ytsApi from '@/services/Axios';
 
 const Navbar: React.FC = () => {
