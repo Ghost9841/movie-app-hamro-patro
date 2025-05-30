@@ -1,11 +1,12 @@
-import MovieHeroSection from "./features/movie/pages/MovieHeroSection"
+import MovieListPage from "./features/movie/pages/MovieListPage"
+import Navbar from "./features/NavBar/NavBar"
 
 
 type Props = {}
 
 const App = (props: Props) => {
   return (
-    <MovieHeroSection/>
+   <MovieListPage searchQuery={""}/>
   )
 }
 

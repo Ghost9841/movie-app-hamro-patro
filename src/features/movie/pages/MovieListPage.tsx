@@ -1,75 +1,49 @@
-// MovieListing.tsx
 import React, { useState, useEffect } from 'react';
-import { type AxiosResponse } from 'axios';
+import axios, { type AxiosResponse } from 'axios';
 import ytsApi from '@/services/Axios';
-import { type YtsMovie, type YtsApiResponse } from '@/features/movie/types/MovieTypes';
+import { type YtsApiResponse, type YtsMovie } from '../types/MovieTypes';
+import Navbar from '@/features/NavBar/NavBar';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
-interface MovieListingProps {
-  onMovieClick: (movieId: number) => void;
-  searchTerm: string;
-  selectedGenre: string;
-  favorites: number[];
-  onToggleFavorite: (movieId: number) => void;
+interface Props {
+  searchQuery: string;
 }
 
-const MovieListing: React.FC<MovieListingProps> = ({
-  onMovieClick,
-  searchTerm,
-  selectedGenre,
-  favorites,
-  onToggleFavorite,
-}) => {
+const MovieListPage: React.FC<Props> = ({ searchQuery }) => {
   const [movies, setMovies] = useState<YtsMovie[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
-  const moviesPerPage = 10;
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const moviesPerPage = 20;
 
-  const fetchMovies = async (page: number, query?: string, genre?: string) => {
+  const fetchMovies = async (page: number, query?: string) => {
     setLoading(true);
     setError(null);
     try {
-      const params: any = { 
-        page, 
-        limit: moviesPerPage 
-      };
-      
-      if (query && query.trim()) {
-        params.query_term = query.trim();
-      }
-      
-      if (genre && genre !== 'all') {
-        params.genre = genre;
-      }
-
       const response: AxiosResponse<YtsApiResponse> = await ytsApi.get('list_movies.json', {
-        params,
+        params: { page, limit: moviesPerPage, query_term: query || undefined },
       });
-      
       const { data } = response.data;
-      setMovies(data.movies || []);
+      setMovies(data.movies);
       setTotalPages(Math.ceil(data.movie_count / data.limit));
     } catch (err) {
       setError('Failed to fetch movies. Please try again.');
       console.error('Fetch error:', err);
-      setMovies([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch movies when page, search term, or genre changes
   useEffect(() => {
-    fetchMovies(currentPage, searchTerm, selectedGenre);
-  }, [currentPage, searchTerm, selectedGenre]);
+    setCurrentPage(1);
+    fetchMovies(1, searchQuery);
+  }, [searchQuery]);
 
-  // Reset to page 1 when search term or genre changes
   useEffect(() => {
-    if (currentPage !== 1) {
-      setCurrentPage(1);
-    }
-  }, [searchTerm, selectedGenre]);
+    fetchMovies(currentPage, searchQuery);
+  }, [currentPage]);
 
   const handlePreviousPage = () => {
     if (currentPage > 1) {
@@ -83,110 +57,78 @@ const MovieListing: React.FC<MovieListingProps> = ({
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center text-red-600 p-4">
-        <p>{error}</p>
-        <button
-          onClick={() => fetchMovies(currentPage, searchTerm, selectedGenre)}
-          className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
-
-  if (!movies || movies.length === 0) {
-    return (
-      <div className="text-center text-gray-600 p-4">
-        <p>No movies found.</p>
-      </div>
-    );
-  }
-
   return (
-    <div>
-      {/* Movies Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
-        {movies.map((movie) => (
-          <div key={movie.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-            <div className="relative">
-              <img
-                src={movie.medium_cover_image}
-                alt={movie.title}
-                className="w-full h-64 object-cover cursor-pointer"
-                onClick={() => onMovieClick(movie.id)}
-              />
-              <button
-                onClick={() => onToggleFavorite(movie.id)}
-                className={`absolute top-2 right-2 p-2 rounded-full ${
-                  favorites.includes(movie.id)
-                    ? 'bg-red-500 text-white'
-                    : 'bg-white text-gray-600'
-                } hover:scale-110 transition-transform`}
-              >
-                ❤️
-              </button>
-            </div>
-            <div className="p-4">
-              <h3
-                className="font-semibold text-sm mb-2 cursor-pointer hover:text-blue-600 line-clamp-2"
-                onClick={() => onMovieClick(movie.id)}
-              >
-                {movie.title}
-              </h3>
-              <div className="flex justify-between items-center text-sm text-gray-600">
-                <span>{movie.year}</span>
-                <span className="flex items-center">
-                  ⭐ {movie.rating}/10
-                </span>
-              </div>
-            </div>
+    <div className="min-h-screen bg-gray-100">
+      <Navbar onSearch={(query) => fetchMovies(1, query)} />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {loading && (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600"></div>
           </div>
-        ))}
-      </div>
-
-      {/* Pagination */}
-      <div className="flex justify-center items-center space-x-4">
-        <button
-          onClick={handlePreviousPage}
-          disabled={currentPage === 1}
-          className={`px-4 py-2 rounded ${
-            currentPage === 1
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-          }`}
-        >
-          Previous
-        </button>
-        
-        <span className="text-gray-700">
-          Page {currentPage} of {totalPages}
-        </span>
-        
-        <button
-          onClick={handleNextPage}
-          disabled={currentPage === totalPages}
-          className={`px-4 py-2 rounded ${
-            currentPage === totalPages
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-          }`}
-        >
-          Next
-        </button>
+        )}
+        {error && (
+          <div className="text-center py-8">
+            <p className="text-red-600 text-lg">{error}</p>
+            <Button
+              onClick={() => fetchMovies(currentPage, searchQuery)}
+              className="mt-4"
+            >
+              Retry
+            </Button>
+          </div>
+        )}
+        {!loading && !error && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+              {movies.map((movie) => (
+                <Card key={movie.id} className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                  <CardContent className="p-0">
+                    <img
+                      src={movie.medium_cover_image}
+                      alt={movie.title}
+                      className="w-full h-64 object-cover"
+                      loading="lazy"
+                    />
+                    <div className="p-4">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
+                        {movie.title_long}
+                      </h3>
+                      <p className="text-gray-600 text-sm">Year: {movie.year}</p>
+                      <p className="text-gray-600 text-sm flex items-center">
+                        <span className="text-yellow-400 mr-1">★</span>
+                        Rating: {movie.rating.toFixed(1)}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            <div className="flex justify-center items-center mt-8 space-x-4">
+              <Button
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
+                variant={currentPage === 1 ? 'secondary' : 'default'}
+                className="transition-colors"
+              >
+                Previous
+              </Button>
+              <span className="text-gray-600">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+                variant={currentPage === totalPages ? 'secondary' : 'default'}
+                className="transition-colors"
+              >
+                Next
+              </Button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
 };
 
-export default MovieListing;
+export default MovieListPage;
