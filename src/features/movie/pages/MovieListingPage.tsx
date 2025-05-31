@@ -16,7 +16,7 @@ interface MovieListingProps {
     onLoadMore: any; // And this line for the 'onLoadMore' property
     currentPage: any; // And this line for the 'currentPage' property
 }
-const MovieListing = ({ movies, loading, error, onSelectMovie, onToggleFavorite, favorites, onLoadMore, hasMore, currentPage }: MovieListingProps) => {
+const MovieListing = ({ movies, loading, error, onSelectMovie, onToggleFavorite, favorites, onLoadMore, hasMore, }: MovieListingProps) => {
     if (loading && movies.length === 0) {
         return <LoadingSpinner />;
     }

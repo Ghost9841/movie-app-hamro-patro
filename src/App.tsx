@@ -19,7 +19,7 @@ const App = () => {
   const [selectedGenre, setSelectedGenre] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [totalMovies, setTotalMovies] = useState(0);
+  const [, setTotalMovies] = useState(0);
 
   // Load favorites from localStorage on mount
   useEffect(() => {
